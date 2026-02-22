@@ -1,0 +1,11 @@
+problem statement: in physiotherapy some special exercises are given by physiotherapists. but most of the patients don't do the exercise correctly and as a result their re-habitation time increases. to monitor if the patients are doing the exercise correctly a pipeline needs to be created with statistics of the patient.
+
+
+
+my proposed solution (for monitoring): i am planning to calculate the angles in the knees, shoulder and other essential parts given in description in the word doc. taking those angles i will train my machine learning model (still not decided) to learn the range of angles at which the exercise is meant to be done correctly or wrongly. 
+
+
+the procedure for proposed solution (for monitoring): first i have to annotate the video using key point (full body) tracking but i am not sure if the tracking will be accurate. i haven't decided the machine learning model that i am going to use for this. i don't want to increase the complexity and computation needs by using a deep learning model.
+
+
+for now i want to only focus on monitoring and i don't know if my solution is correct. please cross check my proposed solution if it is possible... it seems i have to edit the default wire-frame given by CVAT or roboflow for annotation. 
