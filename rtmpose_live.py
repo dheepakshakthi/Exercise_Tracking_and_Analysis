@@ -191,6 +191,8 @@ parser.add_argument("--save",   default=None,
 parser.add_argument("--rtmo",   action="store_true",
                     help="Use single-stage RTMO model (faster but less accurate). "
                          "Default for webcam. NOT default for video files.")
+parser.add_argument("--device", default="cuda",
+                help="onnxruntime device: cuda or cpu (default: cuda)")
 args = parser.parse_args()
 
 MODE = args.mode
@@ -209,7 +211,7 @@ if use_rtmo:
         mode=MODE,
         to_openpose=False,
         backend='onnxruntime',
-        device='cuda',
+        device=args.device,
     )
     print(f"[RTMPose] Model: RTMO single-stage ({MODE})")
 else:
@@ -217,7 +219,7 @@ else:
         mode=MODE,
         to_openpose=False,
         backend='onnxruntime',
-        device='cuda',
+        device=args.device,
     )
     print(f"[RTMPose] Model: two-stage RTMDet + RTMPose ({MODE}) – full resolution")
 

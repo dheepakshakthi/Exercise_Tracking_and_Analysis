@@ -1,0 +1,5 @@
+mediapipe
+onnxruntime-gpu
+opencv-python
+rtmlib
+ultralytics

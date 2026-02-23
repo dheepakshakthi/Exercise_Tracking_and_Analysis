@@ -3,6 +3,7 @@ master/
 job_jpx1yqw1g_optimized_onnx/
 data/
 outputs/
+*.mp4
 models/
 SQUATS.docx
 __pycache__/
