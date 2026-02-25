@@ -4,7 +4,7 @@ import urllib.request
 import os
 
 # Download the pose landmarker model if not present
-MODEL_PATH = 'pose_landmarker.task'
+MODEL_PATH = 'models/pose_landmarker.task'
 if not os.path.exists(MODEL_PATH):
     print('Downloading pose landmarker model...')
     url = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task'
@@ -28,7 +28,7 @@ options = PoseLandmarkerOptions(
     running_mode=VisionRunningMode.VIDEO,
 )
 
-cap = cv2.VideoCapture("c1.mp4")  # Use 0 for webcam
+cap = cv2.VideoCapture("data/c1.mp4")  # Use 0 for webcam
 
 with PoseLandmarker.create_from_options(options) as landmarker:
     while cap.isOpened():
