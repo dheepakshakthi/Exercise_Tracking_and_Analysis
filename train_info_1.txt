@@ -1,0 +1,117 @@
+(master) dheepak@NITRO5-AN51544:~/Documents/PhysiotherapyProject$ uv run train_models.py
+============================================================
+Exercise Classification Model Training
+============================================================
+
+1. Loading data...
+   ✓ Data loaded successfully
+
+2. Extracting features...
+   - Correct exercise frames: 981
+   - Incorrect exercise (w1) frames: 612
+   - Incorrect exercise (w2) frames: 445
+   ✓ Total frames: 2038
+
+3. Preprocessing data...
+   - Missing values before: 0
+   - Missing values after: 0
+   ✓ Preprocessing complete
+
+4. Splitting data (80% train, 20% test)...
+   - Training samples: 1630
+   - Testing samples: 408
+   - Training correct/incorrect ratio: 785/845
+   - Testing correct/incorrect ratio: 196/212
+
+============================================================
+Training Random Forest Classifier
+============================================================
+[Parallel(n_jobs=-1)]: Using backend ThreadingBackend with 12 concurrent workers.
+[Parallel(n_jobs=-1)]: Done  26 tasks      | elapsed:    0.1s
+[Parallel(n_jobs=-1)]: Done 100 out of 100 | elapsed:    0.3s finished
+[Parallel(n_jobs=12)]: Using backend ThreadingBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=12)]: Done 100 out of 100 | elapsed:    0.0s finished
+
+Random Forest Results:
+------------------------------------------------------------
+Accuracy: 0.9583
+
+Classification Report:
+              precision    recall  f1-score   support
+
+   Incorrect       0.99      0.93      0.96       212
+     Correct       0.93      0.98      0.96       196
+
+    accuracy                           0.96       408
+   macro avg       0.96      0.96      0.96       408
+weighted avg       0.96      0.96      0.96       408
+
+
+Confusion Matrix:
+[[198  14]
+ [  3 193]]
+
+Feature Importance (Random Forest):
+             feature  importance
+ left_shoulder_angle    0.193700
+    right_knee_angle    0.164341
+right_shoulder_angle    0.142457
+     right_hip_angle    0.130999
+     left_knee_angle    0.108171
+      left_hip_angle    0.102811
+   right_elbow_angle    0.080757
+    left_elbow_angle    0.076764
+
+✓ Random Forest model saved to: /home/dheepak/Documents/PhysiotherapyProject/random_forest_model.pkl
+
+============================================================
+Training XGBoost Classifier
+============================================================
+
+XGBoost Results:
+------------------------------------------------------------
+Accuracy: 0.9657
+
+Classification Report:
+              precision    recall  f1-score   support
+
+   Incorrect       0.97      0.96      0.97       212
+     Correct       0.96      0.97      0.96       196
+
+    accuracy                           0.97       408
+   macro avg       0.97      0.97      0.97       408
+weighted avg       0.97      0.97      0.97       408
+
+
+Confusion Matrix:
+[[204   8]
+ [  6 190]]
+
+Feature Importance (XGBoost):
+             feature  importance
+ left_shoulder_angle    0.266790
+right_shoulder_angle    0.135927
+    right_knee_angle    0.126230
+     right_hip_angle    0.125021
+      left_hip_angle    0.107844
+     left_knee_angle    0.091855
+    left_elbow_angle    0.079344
+   right_elbow_angle    0.066988
+
+✓ XGBoost model saved to: /home/dheepak/Documents/PhysiotherapyProject/xgboost_model.pkl
+
+============================================================
+Training Complete!
+============================================================
+
+Models saved:
+  1. Random Forest: /home/dheepak/Documents/PhysiotherapyProject/random_forest_model.pkl
+  2. XGBoost: /home/dheepak/Documents/PhysiotherapyProject/xgboost_model.pkl
+
+Model Comparison:
+  Random Forest Accuracy: 0.9583
+  XGBoost Accuracy: 0.9657
+
+✓ Feature info saved to: /home/dheepak/Documents/PhysiotherapyProject/feature_info.json
+(master) dheepak@NITRO5-AN51544:~/Documents/PhysiotherapyProject$

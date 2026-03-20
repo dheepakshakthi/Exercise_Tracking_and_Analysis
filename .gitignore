@@ -7,3 +7,4 @@ models/
 SQUATS.docx
 __pycache__/
 ONNX-HRNET-Human-Pose-Estimation/
+data2/

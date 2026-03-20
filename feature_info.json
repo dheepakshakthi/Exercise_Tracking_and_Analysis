@@ -1,0 +1,17 @@
+{
+  "feature_names": [
+    "left_knee_angle",
+    "right_knee_angle",
+    "left_hip_angle",
+    "right_hip_angle",
+    "left_elbow_angle",
+    "right_elbow_angle",
+    "left_shoulder_angle",
+    "right_shoulder_angle"
+  ],
+  "model_type": "binary_classification",
+  "classes": [
+    "incorrect",
+    "correct"
+  ]
+}
