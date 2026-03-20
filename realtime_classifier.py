@@ -1,10 +1,10 @@
 # realtime_classifier.py - Real-time exercise classification using trained ML models
 #
 # Usage:
-#   python realtime_classifier.py [--source 0]              # Use webcam (default)
-#   python realtime_classifier.py --source video.mp4        # Use video file
-#   python realtime_classifier.py --model xgboost           # Choose model (default: xgboost)
-#   python realtime_classifier.py --model random_forest
+#   python realtime_classifier.py --exercise bicep_curl                    # Use exercise name + webcam
+#   python realtime_classifier.py --exercise squats --source video.mp4     # Use video file
+#   python realtime_classifier.py --exercise bicep_curl --model xgboost    # Choose model
+#   python realtime_classifier.py --list-exercises                         # List available exercises
 #
 # Controls:
 #   'q' or Esc - Quit
@@ -13,6 +13,7 @@
 import argparse
 import json
 import math
+import sys
 import time
 from collections import deque
 from pathlib import Path
@@ -110,6 +111,40 @@ def compute_angles(kps: np.ndarray, scores: np.ndarray) -> dict:
         name: _angle_at_vertex(kps, scores, KP[a], KP[b], KP[c])
         for name, a, b, c in JOINT_ANGLES
     }
+
+
+def discover_available_exercises(models_dir: Path) -> list:
+    """Discover available exercises from tracking_models directory."""
+    if not models_dir.exists():
+        return []
+
+    exercises = []
+    for exercise_dir in models_dir.iterdir():
+        if exercise_dir.is_dir():
+            # Check if at least one model exists in the directory
+            xgb_model = exercise_dir / "xgboost_model.pkl"
+            rf_model = exercise_dir / "random_forest_model.pkl"
+            if xgb_model.exists() or rf_model.exists():
+                exercises.append(exercise_dir.name)
+
+    return sorted(exercises)
+
+
+def find_video_for_exercise(data_dir: Path, exercise_name: str) -> Path | None:
+    """Find a video file for the given exercise in data directory."""
+    exercise_video_dir = data_dir / exercise_name
+
+    if not exercise_video_dir.exists():
+        return None
+
+    # Look for common video formats
+    video_extensions = [".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"]
+
+    for video_file in exercise_video_dir.iterdir():
+        if video_file.suffix.lower() in video_extensions:
+            return video_file
+
+    return None
 
 
 class ExerciseClassifier:
@@ -247,6 +282,7 @@ def draw_classification_overlay(
     fps: float,
     classifier: ExerciseClassifier,
     model_name: str,
+    exercise_name: str,
 ) -> None:
     """Draw classification results and statistics on frame."""
     h, w = frame.shape[:2]
@@ -263,11 +299,22 @@ def draw_classification_overlay(
         cv2.LINE_AA,
     )
 
-    # Draw model name
+    # Draw exercise and model name
+    cv2.putText(
+        frame,
+        f"Exercise: {exercise_name}",
+        (10, 60),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+        cv2.LINE_AA,
+    )
+
     cv2.putText(
         frame,
         f"Model: {model_name}",
-        (10, 60),
+        (10, 85),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
         (255, 255, 255),
@@ -304,7 +351,7 @@ def draw_classification_overlay(
             # Large status text
             text_size = cv2.getTextSize(status, cv2.FONT_HERSHEY_SIMPLEX, 1.5, 3)[0]
             text_x = (w - text_size[0]) // 2
-            text_y = 60
+            text_y = 120
 
             # Background rectangle
             padding = 10
@@ -342,7 +389,7 @@ def draw_classification_overlay(
             cv2.putText(
                 frame,
                 "Analyzing...",
-                ((w - 150) // 2, 60),
+                ((w - 150) // 2, 120),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.8,
                 (255, 255, 0),
@@ -456,47 +503,137 @@ def draw_classification_overlay(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Real-time exercise classification")
+    parser = argparse.ArgumentParser(
+        description="Real-time exercise classification from video or webcam"
+    )
+    parser.add_argument(
+        "--exercise",
+        type=str,
+        required=False,
+        help="Exercise name (must match folder in tracking_models/)",
+    )
     parser.add_argument(
         "--source",
         type=str,
         default="0",
-        help="Video source: 0 for webcam, or path to video file",
+        help="Video source: 0 for webcam (default), or path to video file",
     )
     parser.add_argument(
         "--model",
         type=str,
         default="xgboost",
         choices=["xgboost", "random_forest"],
-        help="Model to use for classification",
+        help="Model to use for classification (default: xgboost)",
     )
-    parser.add_argument("--mode", type=str, default=MODE, help="RTMPose mode")
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default=MODE,
+        help="RTMPose mode (default: balanced)",
+    )
+    parser.add_argument(
+        "--list-exercises",
+        action="store_true",
+        help="List available exercises and exit",
+    )
 
     args = parser.parse_args()
 
     # Setup paths
     script_dir = Path(__file__).parent
+    tracking_models_dir = script_dir / "tracking_models"
+    data_dir = script_dir / "data"
+
+    # Discover available exercises
+    available_exercises = discover_available_exercises(tracking_models_dir)
+
+    # List exercises if requested
+    if args.list_exercises:
+        print("\n" + "=" * 60)
+        print("Available Exercises")
+        print("=" * 60)
+        if available_exercises:
+            for i, exercise in enumerate(available_exercises, 1):
+                print(f"  {i}. {exercise}")
+        else:
+            print("  No exercises found in tracking_models/")
+        print("=" * 60 + "\n")
+        return
+
+    # Validate exercise name
+    if not args.exercise:
+        print("\n" + "=" * 60)
+        print("ERROR: Exercise not specified")
+        print("=" * 60)
+        if available_exercises:
+            print("\nAvailable exercises:")
+            for exercise in available_exercises:
+                print(f"  - {exercise}")
+            print(f"\nUsage: python realtime_classifier.py --exercise <exercise_name>")
+        else:
+            print("\nNo exercises found in tracking_models/")
+            print("Please run train_models.py first to train exercise models.")
+        print("=" * 60 + "\n")
+        return
+
+    if args.exercise not in available_exercises:
+        print(f"\nError: Exercise '{args.exercise}' not found in {tracking_models_dir}")
+        print(f"Available exercises: {', '.join(available_exercises)}")
+        return
+
+    # Setup model path
+    exercise_models_dir = tracking_models_dir / args.exercise
     if args.model == "xgboost":
-        model_path = script_dir / "xgboost_model.pkl"
+        model_path = exercise_models_dir / "xgboost_model.pkl"
         model_name = "XGBoost"
     else:
-        model_path = script_dir / "random_forest_model.pkl"
+        model_path = exercise_models_dir / "random_forest_model.pkl"
         model_name = "Random Forest"
 
     if not model_path.exists():
         print(f"Error: Model file not found: {model_path}")
-        print("Please run train_models.py first to train the models.")
         return
+
+    # Load feature info if available
+    feature_info_path = exercise_models_dir / "feature_info.json"
+    feature_info = {}
+    if feature_info_path.exists():
+        with open(feature_info_path, "r") as f:
+            feature_info = json.load(f)
+        print(f"✓ Loaded feature info: {feature_info_path}")
 
     # Initialize classifier
     classifier = ExerciseClassifier(model_path)
 
     # Initialize pose detector
-    print(f"Initializing RTMPose ({args.mode} mode)...")
+    print(f"\nInitializing RTMPose ({args.mode} mode)...")
     body = Body(mode=args.mode, to_openpose=False, backend="onnxruntime", device="cuda")
 
+    # Determine video source
+    if args.source == "0":
+        # Use webcam
+        source = 0
+        source_desc = "Webcam"
+    else:
+        # Check if it's a file path
+        source_path = Path(args.source)
+        if source_path.exists():
+            source = str(source_path)
+            source_desc = f"File: {source_path.name}"
+        else:
+            # Try to find video for exercise in data folder
+            video_file = find_video_for_exercise(data_dir, args.exercise)
+            if video_file:
+                source = str(video_file)
+                source_desc = f"File: {video_file.name}"
+                print(f"✓ Found video for exercise: {video_file}")
+            else:
+                print(f"\nWarning: No video file found at {args.source}")
+                print(f"Falling back to webcam...")
+                source = 0
+                source_desc = "Webcam"
+
     # Open video source
-    source = 0 if args.source == "0" else args.source
     cap = cv2.VideoCapture(source)
 
     if not cap.isOpened():
@@ -506,8 +643,9 @@ def main():
     print(f"\n{'=' * 60}")
     print(f"Real-time Exercise Classification")
     print(f"{'=' * 60}")
+    print(f"Exercise: {args.exercise}")
     print(f"Model: {model_name}")
-    print(f"Source: {'Webcam' if source == 0 else source}")
+    print(f"Source: {source_desc}")
     print(f"Mode: {args.mode}")
     print(f"\nControls:")
     print(f"  'q' or Esc - Quit")
@@ -548,7 +686,7 @@ def main():
 
             # Draw overlay
             draw_classification_overlay(
-                annotated, result, fps_smooth, classifier, model_name
+                annotated, result, fps_smooth, classifier, model_name, args.exercise
             )
 
             # Display
@@ -575,7 +713,8 @@ def main():
         print(f"\n{'=' * 60}")
         print("Final Statistics:")
         print(f"{'=' * 60}")
-        print(f"Total frames: {classifier.total_frames}")
+        print(f"Exercise: {args.exercise}")
+        print(f"Total frames analyzed: {classifier.total_frames}")
         print(
             f"Correct: {classifier.correct_frames} ({100 * classifier.correct_frames / max(classifier.total_frames, 1):.1f}%)"
         )
